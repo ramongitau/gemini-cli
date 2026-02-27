@@ -40,6 +40,7 @@ import { GoogleCredentialProvider } from '../mcp/google-auth-provider.js';
 import { ServiceAccountImpersonationProvider } from '../mcp/sa-impersonation-provider.js';
 import { DiscoveredMCPTool } from './mcp-tool.js';
 import { XcodeMcpBridgeFixTransport } from './xcode-mcp-fix-transport.js';
+import { resolveExecutable } from '../utils/shell-utils.js';
 
 import type { CallableTool, FunctionCall, Part, Tool } from '@google/genai';
 import { basename } from 'node:path';
@@ -1991,9 +1992,14 @@ export async function createTransport(
       }
     }
 
+    const resolvedCommand =
+      (await resolveExecutable(mcpServerConfig.command)) ||
+      mcpServerConfig.command;
+
     let transport: Transport = new StdioClientTransport({
-      command: mcpServerConfig.command,
+      command: resolvedCommand,
       args: mcpServerConfig.args || [],
+
       env: finalEnv,
       cwd: mcpServerConfig.cwd,
       stderr: 'pipe',

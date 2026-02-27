@@ -1,0 +1,43 @@
+
+const { execSync } = require('child_process');
+
+/**
+ * Env Validator Hook (SessionStart) 
+ * Ensures the environment is ready for development.
+ */
+
+async function main() {
+  const requirements = ['node', 'git'];
+  const missing = [];
+
+  for (const req of requirements) {
+    try {
+      execSync(`${req} --version`, { stdio: 'ignore' });
+    } catch (e) {
+      missing.push(req);
+    }
+  }
+
+  if (missing.length > 0) {
+    console.log(JSON.stringify({
+      systemMessage: `⚠️ Warning: Missing dependencies: ${missing.join(', ')}. Some features may not work.`,
+      decision: 'allow'
+    }));
+  } else {
+    console.log(JSON.stringify({
+      systemMessage: '✅ Environment check passed.',
+      decision: 'allow'
+    }));
+  }
+}
+
+(async () => {
+  try {
+    await main();
+  } catch (err) {
+    console.log(JSON.stringify({
+      systemMessage: `❌ Hook error: ${err.message}`,
+      decision: 'allow'
+    }));
+  }
+})();
