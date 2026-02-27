@@ -28,3 +28,58 @@ This typically occurs when `npm` recalculates the dependency tree or when there'
 
  This typically occurs when `npm` recalculates the dependency tree or when there's a version-specific change in how peer dependencies are recorded. No changes were made to the `package.json` file.
 --------------------------------------------------
+
+[2026-02-27T02:16:33.389Z]
+User: "Explain how the MCP client is initialized in this project."
+Agent:  I will search for "MCP" and "client" in the codebase to identify where the MCP client is initialized.  codebase to identify where the MCP client is initialized. 
+  I will read `packages/core/src/tools/mcp-client-manager.ts` to understand how the MCP client is managed and initialized. 
+  I will read `packages/core/src/tools/mcp-client.ts` to see how an individual client is initialized and connected. 
+  In this project, MCP client initialization follows a hierarchical process managed by the `McpClientManager` and individual `McpClient` instances.
+
+### 1. Orchestration: `McpClientManager`
+The **`McpClientManager`** (in `packages/core/src/tools/mcp-client-manager.ts`) is the central orchestrator. It manages the lifecycle of multiple MCP clients defined in the user's configuration or provided by extensions.
+- **`startConfiguredMcpServers()`**: Triggered during application startup, it reads the MCP server configurations and initiates discovery for each.
+- **`maybeDiscoverMcpServer()`**: For each server, it checks if it's already running, blocked by settings, or disabled by the user. If allowed, it instantiates a new `McpClient`.
+
+### 2. Individual Client Setup: `McpClient`
+Each **`McpClient`** (in `packages/core/src/tools/mcp-client.ts`) represents a connection to a single MCP server.
+- **`connect()`**: This method calls the **`connectToMcpServer()`** factory function.
+- **`connectToMcpServer()`**:
+  - Initializes a new **`Client`** from the `@modelcontextprotocol/sdk`.
+  - Configures capabilities (e.g., listening for root directory changes).
+  - Calls **`createTransport()`** to determine the connection method (Stdio, SSE, or HTTP) based on the server's configuration (`command` vs. `url`).
+  - For Stdio servers, it sanitizes the environment and resolves the executable path.
+  - For network servers (SSE/HTTP), it handles authentication providers (OAuth, Google Credentials, or Service Account Impersonation).
+
+### 3. Discovery and Registration
+Once a connection is established, the `McpClient` runs its **`discover()`** phase:
+- **Tools**: Fetches available tools and wraps them in `DiscoveredMCPTool` instances.
+- **Prompts**: Discovers prompts that can be invoked by the model.
+- **Resources**: Lists resources provided by the server.
+- **Registration**: All discovered items are registered with the central `ToolRegistry`, `PromptRegistry`, and `ResourceRegistry` so they are available for use during a chat session.
+
+### 4. Dynamic Updates
+After initialization, the client registers **notification handlers** to listen for `listChanged` events from the server. If a server updates its tools or resources, the client automatically triggers a refresh loop to synchronize the local registries. `McpClientManager`** (in `packages/core/src/tools/mcp-client-manager.ts`) is the central orchestrator. It manages the lifecycle of multiple MCP clients defined in the user's configuration or provided by extensions.
+- **`startConfiguredMcpServers()`**:  Triggered during application startup, it reads the MCP server configurations and initiates discovery for each.
+- **`maybeDiscoverMcpServer()`**: For each server, it checks if it's already running, blocked by settings, or disabled by the user. If allowed, it instantiates a new `McpClient `.
+
+### 2. Individual Client Setup: `McpClient`
+Each **`McpClient`** (in `packages/core/src/tools/mcp-client.ts`) represents a connection to a single MCP server.
+- **`connect()`**: This method calls the **`connect ToMcpServer()`** factory function.
+- **`connectToMcpServer()`**:
+  - Initializes a new **`Client`** from the `@modelcontextprotocol/sdk`.
+  - Configures capabilities (e.g., listening for root directory changes).
+  - Calls **`createTransport()`**  to determine the connection method (Stdio, SSE, or HTTP) based on the server's configuration (`command` vs. `url`).
+  - For Stdio servers, it sanitizes the environment and resolves the executable path.
+  - For network servers (SSE/HTTP), it handles authentication providers ( OAuth, Google Credentials, or Service Account Impersonation).
+
+### 3. Discovery and Registration
+Once a connection is established, the `McpClient` runs its **`discover()`** phase:
+- **Tools**: Fetches available tools and wraps them in `DiscoveredMCPTool` instances.
+- **Prom pts**: Discovers prompts that can be invoked by the model.
+- **Resources**: Lists resources provided by the server.
+- **Registration**: All discovered items are registered with the central `ToolRegistry`, `PromptRegistry`, and `ResourceRegistry` so they are available for use during a chat session.
+
+### 4 . Dynamic Updates
+After initialization, the client registers **notification handlers** to listen for `listChanged` events from the server. If a server updates its tools or resources, the client automatically triggers a refresh loop to synchronize the local registries.
+--------------------------------------------------
